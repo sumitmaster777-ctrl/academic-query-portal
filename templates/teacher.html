@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Teacher Dashboard - Academic Query Portal">
     <title>Teacher Dashboard</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
@@ -81,7 +81,7 @@
         <p>Teacher Dashboard</p>
     </footer>
 
-    <script src="teacher.js"></script>
+    <script src="{{ url_for('static', filename='teacher.js') }}"></script>
 
 </body>
 </html>
