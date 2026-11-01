@@ -91,10 +91,15 @@ queryForm.addEventListener("submit", async function (event) {
     };
 
     try {
+        const csrfToken = document.querySelector(
+            'meta[name="csrf-token"]'
+        ).getAttribute("content");
+
         const response = await fetch("/api/queries", {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken
             },
             body: JSON.stringify(query)
         });

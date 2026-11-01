@@ -1,22 +1,33 @@
 
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
+import os
+import re
+from datetime import datetime
+
+from flask import (
+    Flask, render_template, request, jsonify,
+    redirect, url_for, flash
+)
 from flask_sqlalchemy import SQLAlchemy
+from flask_wtf.csrf import CSRFProtect
 from flask_login import (
     LoginManager, UserMixin, login_user, logout_user,
     login_required, current_user
 )
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
-import re
+
 
 app = Flask(__name__)
 
+# Application configuration
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///academic_queries.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["SECRET_KEY"] = "change-this-secret-key-before-deployment"
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
 
+# Initialize CSRF protection and database
+csrf = CSRFProtect(app)
 db = SQLAlchemy(app)
 
+# Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
@@ -50,12 +61,13 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
 
+# Load logged-in user
 @login_manager.user_loader
 def load_user(user_id):
     return db.session.get(User, int(user_id))
 
 
-# Authentication routes
+# Student registration
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if current_user.is_authenticated:
@@ -87,6 +99,7 @@ def register():
             email=email,
             role="student"
         )
+
         user.set_password(password)
 
         db.session.add(user)
@@ -98,11 +111,13 @@ def register():
     return render_template("register.html")
 
 
+# Login
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if current_user.is_authenticated:
         if current_user.role == "teacher":
             return redirect(url_for("teacher"))
+
         return redirect(url_for("home"))
 
     if request.method == "POST":
@@ -124,6 +139,7 @@ def login():
     return render_template("login.html")
 
 
+# Logout
 @app.route("/logout")
 @login_required
 def logout():
@@ -163,7 +179,10 @@ def submit_query():
     if not data:
         return jsonify({"error": "Invalid request"}), 400
 
-    required_fields = ["studentName", "email", "course", "category", "description"]
+    required_fields = [
+        "studentName", "email", "course",
+        "category", "description"
+    ]
 
     for field in required_fields:
         if not data.get(field) or not str(data[field]).strip():
@@ -192,7 +211,9 @@ def submit_query():
 @login_required
 def get_queries():
     if current_user.role == "teacher":
-        queries = Query.query.order_by(Query.submitted_at.desc()).all()
+        queries = Query.query.order_by(
+            Query.submitted_at.desc()
+        ).all()
     else:
         queries = Query.query.filter_by(
             email=current_user.email
@@ -209,7 +230,9 @@ def get_queries():
             "category": query.category,
             "description": query.description,
             "status": query.status,
-            "submittedAt": query.submitted_at.strftime("%Y-%m-%d %H:%M:%S")
+            "submittedAt": query.submitted_at.strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
         })
 
     return jsonify(result)
@@ -236,9 +259,12 @@ def update_query_status(query_id):
     query.status = data["status"]
     db.session.commit()
 
-    return jsonify({"message": "Query status updated successfully"})
+    return jsonify({
+        "message": "Query status updated successfully"
+    })
 
 
+# Run application
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()

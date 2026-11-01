@@ -91,12 +91,17 @@ async function displayTeacherQueries() {
             statusSelect.disabled = true;
 
             try {
+                const csrfToken = document.querySelector(
+                    'meta[name="csrf-token"]'
+                ).getAttribute("content");
+
                 const response = await fetch(
                     "/api/queries/" + encodeURIComponent(query.id),
                     {
                         method: "PUT",
                         headers: {
-                            "Content-Type": "application/json"
+                            "Content-Type": "application/json",
+                            "X-CSRFToken": csrfToken
                         },
                         body: JSON.stringify({
                             status: statusSelect.value
