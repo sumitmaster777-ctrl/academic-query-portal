@@ -1,18 +1,28 @@
 
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import (
+    LoginManager, UserMixin, login_user, logout_user,
+    login_required, current_user
+)
+from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+import re
 
 app = Flask(__name__)
 
-# Database configuration
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///academic_queries.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SECRET_KEY"] = "change-this-secret-key-before-deployment"
 
 db = SQLAlchemy(app)
 
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login"
 
-# Database model
+
+# Query model
 class Query(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     query_id = db.Column(db.String(50), unique=True, nullable=False)
@@ -25,33 +35,135 @@ class Query(db.Model):
     submitted_at = db.Column(db.DateTime, default=db.func.now())
 
 
+# User model
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(20), nullable=False)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return db.session.get(User, int(user_id))
+
+
+# Authentication routes
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for("home"))
+
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+
+        if not name or not email or not password:
+            flash("Please complete all fields.")
+            return redirect(url_for("register"))
+
+        if len(password) < 8:
+            flash("Password must contain at least 8 characters.")
+            return redirect(url_for("register"))
+
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+            flash("Please enter a valid email address.")
+            return redirect(url_for("register"))
+
+        if User.query.filter_by(email=email).first():
+            flash("An account with this email already exists.")
+            return redirect(url_for("register"))
+
+        user = User(
+            name=name,
+            email=email,
+            role="student"
+        )
+        user.set_password(password)
+
+        db.session.add(user)
+        db.session.commit()
+
+        login_user(user)
+        return redirect(url_for("home"))
+
+    return render_template("register.html")
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if current_user.is_authenticated:
+        if current_user.role == "teacher":
+            return redirect(url_for("teacher"))
+        return redirect(url_for("home"))
+
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+
+        user = User.query.filter_by(email=email).first()
+
+        if user and user.check_password(password):
+            login_user(user)
+
+            if user.role == "teacher":
+                return redirect(url_for("teacher"))
+
+            return redirect(url_for("home"))
+
+        flash("Invalid email or password.")
+
+    return render_template("login.html")
+
+
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for("login"))
+
+
 # Student portal
 @app.route("/")
+@login_required
 def home():
+    if current_user.role != "student":
+        return redirect(url_for("teacher"))
+
     return render_template("index.html")
 
 
 # Teacher dashboard
 @app.route("/teacher")
+@login_required
 def teacher():
+    if current_user.role != "teacher":
+        return redirect(url_for("home"))
+
     return render_template("teacher.html")
 
 
-# API: Submit a query
+# Submit query
 @app.route("/api/queries", methods=["POST"])
+@login_required
 def submit_query():
+    if current_user.role != "student":
+        return jsonify({"error": "Access denied"}), 403
+
     data = request.get_json()
 
     if not data:
         return jsonify({"error": "Invalid request"}), 400
 
-    required_fields = [
-        "studentName",
-        "email",
-        "course",
-        "category",
-        "description"
-    ]
+    required_fields = ["studentName", "email", "course", "category", "description"]
 
     for field in required_fields:
         if not data.get(field) or not str(data[field]).strip():
@@ -59,8 +171,8 @@ def submit_query():
 
     query = Query(
         query_id="Q" + str(int(datetime.now().timestamp() * 1000)),
-        student_name=data["studentName"].strip(),
-        email=data["email"].strip(),
+        student_name=current_user.name,
+        email=current_user.email,
         course=data["course"].strip(),
         category=data["category"].strip(),
         description=data["description"].strip()
@@ -75,12 +187,16 @@ def submit_query():
     }), 201
 
 
-# API: Retrieve all queries
+# Retrieve queries
 @app.route("/api/queries", methods=["GET"])
+@login_required
 def get_queries():
-    queries = Query.query.order_by(
-        Query.submitted_at.desc()
-    ).all()
+    if current_user.role == "teacher":
+        queries = Query.query.order_by(Query.submitted_at.desc()).all()
+    else:
+        queries = Query.query.filter_by(
+            email=current_user.email
+        ).order_by(Query.submitted_at.desc()).all()
 
     result = []
 
@@ -93,22 +209,23 @@ def get_queries():
             "category": query.category,
             "description": query.description,
             "status": query.status,
-            "submittedAt": query.submitted_at.strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
+            "submittedAt": query.submitted_at.strftime("%Y-%m-%d %H:%M:%S")
         })
 
     return jsonify(result)
-# API: Update query status
-@app.route("/api/queries/<string:query_id>", methods=["PUT"])
-def update_query_status(query_id):
-    data = request.get_json()
 
-    if not data or data.get("status") not in [
-        "Pending",
-        "In Progress",
-        "Resolved"
-    ]:
+
+# Update query status
+@app.route("/api/queries/<string:query_id>", methods=["PUT"])
+@login_required
+def update_query_status(query_id):
+    if current_user.role != "teacher":
+        return jsonify({"error": "Access denied"}), 403
+
+    data = request.get_json()
+    allowed_statuses = ["Pending", "In Progress", "Resolved"]
+
+    if not data or data.get("status") not in allowed_statuses:
         return jsonify({"error": "Invalid status"}), 400
 
     query = Query.query.filter_by(query_id=query_id).first()
@@ -120,6 +237,7 @@ def update_query_status(query_id):
     db.session.commit()
 
     return jsonify({"message": "Query status updated successfully"})
+
 
 if __name__ == "__main__":
     with app.app_context():

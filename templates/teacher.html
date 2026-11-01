@@ -13,11 +13,13 @@
 
     <header>
         <h1>Teacher Dashboard</h1>
+        <p>Welcome, {{ current_user.name }}!</p>
 
         <nav aria-label="Main navigation">
             <a href="{{ url_for('home') }}">Student Portal</a>
             <a href="#dashboard">Dashboard</a>
             <a href="#all-queries">All Queries</a>
+            <a href="{{ url_for('logout') }}">Logout</a>
         </nav>
     </header>
 

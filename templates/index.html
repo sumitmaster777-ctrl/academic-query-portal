@@ -11,6 +11,7 @@
 <body>
 <header>
     <h1>Academic Query Portal</h1>
+    <p>Welcome, {{ current_user.name }}!</p>
 
     <nav aria-label="Main navigation">
     <a href="#home">Home</a>
@@ -18,6 +19,7 @@
     <a href="#submit-query">Submit Query</a>
     <a href="#my-queries">My Queries</a>
     <a href="{{ url_for('teacher') }}">Teacher Dashboard</a>
+    <a href="{{ url_for('logout') }}">Logout</a>
     </nav>
 </header>
 <main>
