@@ -1,0 +1,87 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Teacher Dashboard - Academic Query Portal">
+    <title>Teacher Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <header>
+        <h1>Teacher Dashboard</h1>
+
+        <nav aria-label="Main navigation">
+            <a href="index.html">Student Portal</a>
+            <a href="#dashboard">Dashboard</a>
+            <a href="#all-queries">All Queries</a>
+        </nav>
+    </header>
+
+    <main>
+
+        <section id="dashboard">
+            <h2>Dashboard Overview</h2>
+
+            <div class="dashboard-stats">
+
+                <div class="stat-card">
+                    <h3>Total Queries</h3>
+                    <p id="totalQueries">0</p>
+                </div>
+
+                <div class="stat-card">
+                    <h3>Pending</h3>
+                    <p id="pendingQueries">0</p>
+                </div>
+
+                <div class="stat-card">
+                    <h3>In Progress</h3>
+                    <p id="progressQueries">0</p>
+                </div>
+
+                <div class="stat-card">
+                    <h3>Resolved</h3>
+                    <p id="resolvedQueries">0</p>
+                </div>
+
+            </div>
+        </section>
+
+        <section id="all-queries">
+            <h2>All Student Queries</h2>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Query ID</th>
+                            <th>Student</th>
+                            <th>Course</th>
+                            <th>Category</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="teacherQueries">
+                        <!-- Queries will appear here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Academic Query Portal.</p>
+        <p>Teacher Dashboard</p>
+    </footer>
+
+    <script src="teacher.js"></script>
+
+</body>
+</html>

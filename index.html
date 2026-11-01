@@ -1,0 +1,135 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Academic Query Resolution Portal for LPU students">
+    <title>Academic Query Portal</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+    <h1>Academic Query Portal</h1>
+
+    <nav aria-label="Main navigation">
+    <a href="#home">Home</a>
+    <a href="#about">About</a>
+    <a href="#submit-query">Submit Query</a>
+    <a href="#my-queries">My Queries</a>
+    <a href="teacher.html">Teacher Dashboard</a>
+    </nav>
+</header>
+<main>
+    <section id="home">
+        <h2>Welcome to Academic Query Portal</h2>
+
+        <p>
+            A simple platform for LPU students to submit
+            academic queries related to assignments,
+            lectures, practicals, and examinations.
+        </p>
+
+        <a href="#submit-query">Submit Your Query</a>
+    </section>
+    <section id="about">
+    <h2>About the Portal</h2>
+
+    <p>
+        Academic Query Portal helps LPU students
+        organise and submit their academic doubts
+        through one simple platform.
+    </p>
+
+    <p>
+        Students can raise queries related to assignments,
+        lectures, practicals, and examinations.
+    </p>
+</section>
+
+<section id="submit-query">
+    <h2>Submit Your Academic Query</h2>
+
+    <form id="queryForm">
+
+        <div>
+            <label for="student-name">Full Name</label>
+            <input
+                type="text"
+                id="student-name"
+                name="studentName"
+                placeholder="Enter your full name"
+                required
+            >
+        </div>
+
+        
+        <div>
+            <label for="student-email">Email Address</label>
+            <input
+                type="email"
+                id="student-email"
+                name="studentEmail"
+                placeholder="Enter your email"
+                pattern="[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"
+                title="Please enter a valid email address, such as student@example.com"
+                required
+    >
+        </div>
+
+
+        <div>
+            <label for="student-course">Course</label>
+            <input
+                type="text"
+                id="student-course"
+                name="studentCourse"
+                placeholder="e.g. B.Tech CSE"
+                required
+            >
+        </div>
+
+        <div>
+            <label for="query-category">Query Category</label>
+            <select id="query-category" name="category" required>
+                <option value="">Select a category</option>
+                <option value="assignments">Assignments</option>
+                <option value="lectures">Lectures</option>
+                <option value="practicals">Practicals</option>
+                <option value="examinations">Examinations</option>
+            </select>
+        </div>
+
+        <div>
+            <label for="query-description">Describe Your Query</label>
+            <textarea
+                id="query-description"
+                name="queryDescription"
+                rows="5"
+                placeholder="Write your academic query here..."
+                required
+            ></textarea>
+        </div>
+
+        <button type="submit">Submit Query</button>
+        <p id="successMessage" role="status"></p>
+
+    </form>
+</section>
+<footer>
+    <p>&copy; 2026 Academic Query Portal. All rights reserved.</p>
+    <p>Designed for LPU students.</p>
+</footer>
+
+<section id="my-queries">
+    <h2>My Submitted Queries</h2>
+
+    <div id="queriesContainer">
+        <!-- Submitted queries will appear here -->
+    </div>
+</section>
+
+</main>
+<script src="script.js"></script>
+</body>
+</html>
