@@ -12,6 +12,13 @@
     <main class="login-container">
         <h1>Welcome Back</h1>
         <p>Login to your Academic Query Portal account.</p>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+            <p class="flash-message">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
 
         <form method="POST" action="{{ url_for('login') }}">
             <label for="email">Email Address</label>

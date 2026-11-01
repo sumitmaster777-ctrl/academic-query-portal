@@ -12,6 +12,13 @@
     <main class="login-container">
         <h1>Create Student Account</h1>
         <p>Register to access the Academic Query Portal.</p>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+            <p class="flash-message">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
 
         <form method="POST" action="{{ url_for('register') }}">
             <label for="name">Full Name</label>

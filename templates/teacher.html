@@ -14,6 +14,7 @@
     <header>
         <h1>Teacher Dashboard</h1>
         <p>Welcome, {{ current_user.name }}!</p>
+        <p>{{ current_user.email }}</p>
 
         <nav aria-label="Main navigation">
             <a href="{{ url_for('home') }}">Student Portal</a>
