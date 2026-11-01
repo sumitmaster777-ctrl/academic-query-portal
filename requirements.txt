@@ -8,7 +8,10 @@ gunicorn==26.2.0
 itsdangerous==2.2.0
 Jinja2==3.1.6
 MarkupSafe==3.0.4
+psycopg==3.3.6
+psycopg-binary==3.3.6
 SQLAlchemy==2.1.6
 typing_extensions==4.16.0
+tzdata==2026.6
 Werkzeug==3.1.9
 WTForms==3.3.1
