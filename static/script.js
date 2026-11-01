@@ -4,27 +4,40 @@ const successMessage = document.getElementById("successMessage");
 const emailInput = document.getElementById("student-email");
 const queriesContainer = document.getElementById("queriesContainer");
 
-emailInput.addEventListener("input", function() {
+emailInput.addEventListener("input", function () {
     emailInput.setCustomValidity("");
 });
 
-// Retrieve saved queries
-function getSavedQueries() {
-    return JSON.parse(localStorage.getItem("academicQueries")) || [];
+// Retrieve queries from Flask
+async function getSavedQueries() {
+    try {
+        const response = await fetch("/api/queries");
+
+        if (!response.ok) {
+            throw new Error("Unable to retrieve queries");
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error(error);
+        queriesContainer.textContent = "Unable to load queries.";
+        return [];
+    }
 }
 
-// Display saved queries
-function displayQueries() {
-    const queries = getSavedQueries();
+// Display submitted queries
+async function displayQueries() {
+    const queries = await getSavedQueries();
 
     queriesContainer.innerHTML = "";
 
     if (queries.length === 0) {
-        queriesContainer.textContent = "You haven't submitted any queries yet.";
+        queriesContainer.textContent =
+            "You haven't submitted any queries yet.";
         return;
     }
 
-    queries.forEach(function(query) {
+    queries.forEach(function (query) {
         const card = document.createElement("div");
         card.className = "query-card";
 
@@ -35,7 +48,8 @@ function displayQueries() {
         category.textContent = "Category: " + query.category;
 
         const description = document.createElement("p");
-        description.textContent = "Description: " + query.description;
+        description.textContent =
+            "Description: " + query.description;
 
         const date = document.createElement("p");
         date.textContent = "Submitted: " + query.submittedAt;
@@ -50,7 +64,7 @@ function displayQueries() {
 }
 
 // Handle form submission
-queryForm.addEventListener("submit", function(event) {
+queryForm.addEventListener("submit", async function (event) {
     event.preventDefault();
 
     if (!queryForm.checkValidity()) {
@@ -61,43 +75,53 @@ queryForm.addEventListener("submit", function(event) {
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!emailPattern.test(emailInput.value.trim())) {
-        emailInput.setCustomValidity("Please enter a valid email address.");
+        emailInput.setCustomValidity(
+            "Please enter a valid email address."
+        );
         emailInput.reportValidity();
         return;
     }
 
     const query = {
-        id: "Q" + Date.now(),
         studentName: document.getElementById("student-name").value.trim(),
         email: emailInput.value.trim(),
         course: document.getElementById("student-course").value.trim(),
         category: document.getElementById("query-category").value,
-        description: document.getElementById("query-description").value.trim(),
-        status: "Pending",
-        submittedAt: new Date().toLocaleString()
+        description: document.getElementById("query-description").value.trim()
     };
 
-    const queries = getSavedQueries();
-    queries.push(query);
+    try {
+        const response = await fetch("/api/queries", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(query)
+        });
 
-    localStorage.setItem("academicQueries", JSON.stringify(queries));
+        const result = await response.json();
 
-    successMessage.textContent =
-        "Thank you, " + query.studentName +
-        "! Your query has been saved. Query ID: " + query.id;
+        if (!response.ok) {
+            throw new Error(result.error || "Query submission failed");
+        }
 
-    queryForm.reset();
+        successMessage.textContent =
+            "Thank you, " + query.studentName +
+            "! Your query has been saved. Query ID: " +
+            result.query_id;
 
-    displayQueries();
-});
+        queryForm.reset();
 
-// Display existing queries when page opens
-displayQueries();
+        await displayQueries();
 
+    } catch (error) {
+        successMessage.textContent =
+            "Unable to submit your query. Please try again.";
 
-// Automatically refresh queries when another tab changes their status
-window.addEventListener("storage", function(event) {
-    if (event.key === "academicQueries") {
-        displayQueries();
+        console.error(error);
     }
 });
+
+// Load queries when page opens
+displayQueries();
+setInterval(displayQueries, 5000);

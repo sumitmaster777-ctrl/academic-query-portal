@@ -1,13 +1,27 @@
 
 const teacherQueries = document.getElementById("teacherQueries");
 
-function getSavedQueries() {
-    return JSON.parse(localStorage.getItem("academicQueries")) || [];
+// Retrieve queries from Flask
+async function getSavedQueries() {
+    try {
+        const response = await fetch("/api/queries");
+
+        if (!response.ok) {
+            throw new Error("Unable to retrieve queries");
+        }
+
+        return await response.json();
+
+    } catch (error) {
+        console.error(error);
+        return [];
+    }
 }
 
 // Update dashboard statistics
 function updateStatistics(queries) {
-    document.getElementById("totalQueries").textContent = queries.length;
+    document.getElementById("totalQueries").textContent =
+        queries.length;
 
     document.getElementById("pendingQueries").textContent =
         queries.filter(q => q.status === "Pending").length;
@@ -20,8 +34,8 @@ function updateStatistics(queries) {
 }
 
 // Display all student queries
-function displayTeacherQueries() {
-    const queries = getSavedQueries();
+async function displayTeacherQueries() {
+    const queries = await getSavedQueries();
 
     teacherQueries.innerHTML = "";
     updateStatistics(queries);
@@ -61,6 +75,7 @@ function displayTeacherQueries() {
 
         ["Pending", "In Progress", "Resolved"].forEach(function(status) {
             const option = document.createElement("option");
+
             option.value = status;
             option.textContent = status;
 
@@ -71,23 +86,34 @@ function displayTeacherQueries() {
             statusSelect.appendChild(option);
         });
 
-        // Save status when teacher changes it
-        statusSelect.addEventListener("change", function() {
-            const savedQueries = getSavedQueries();
+        // Update status through Flask
+        statusSelect.addEventListener("change", async function() {
+            statusSelect.disabled = true;
 
-            const selectedQuery = savedQueries.find(
-                q => q.id === query.id
-            );
-
-            if (selectedQuery) {
-                selectedQuery.status = statusSelect.value;
-
-                localStorage.setItem(
-                    "academicQueries",
-                    JSON.stringify(savedQueries)
+            try {
+                const response = await fetch(
+                    "/api/queries/" + encodeURIComponent(query.id),
+                    {
+                        method: "PUT",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            status: statusSelect.value
+                        })
+                    }
                 );
 
-                displayTeacherQueries();
+                if (!response.ok) {
+                    throw new Error("Status update failed");
+                }
+
+                await displayTeacherQueries();
+
+            } catch (error) {
+                alert("Unable to update query status.");
+                console.error(error);
+                await displayTeacherQueries();
             }
         });
 
@@ -98,4 +124,5 @@ function displayTeacherQueries() {
     });
 }
 
+// Load queries when dashboard opens
 displayTeacherQueries();
